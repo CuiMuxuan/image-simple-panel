@@ -18,6 +18,9 @@
     "dev:web": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "build:pages": "tsc -b && vite build --mode pages",
+    "build:desktop-server": "tsc -p tsconfig.release-server.json",
+    "build:release": "node scripts/build-windows-release.mjs",
+    "release:pack": "npm run build && npm run build:desktop-server && npm run build:release",
     "preview": "vite preview --host 127.0.0.1",
     "check": "tsc -b"
   },
@@ -40,6 +43,7 @@
     "@types/node": "^25.0.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "postject": "^1.0.0-alpha.6",
     "typescript": "^5.9.3"
   }
 }

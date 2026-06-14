@@ -1,5 +1,8 @@
 node_modules/
 dist/
+release/
+dist-desktop/
+.tmp-sea-test/
 data/
 dev-server.out.log
 dev-server.err.log

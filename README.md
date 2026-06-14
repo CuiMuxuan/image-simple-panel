@@ -29,6 +29,7 @@ https://cuimuxuan.github.io/image-simple-panel/
 - 重试时显示当前正在重试的请求数量。
 - 生成图右键支持复制源链接、下载图片、复制本地路径。
 - GitHub Actions 自动部署 GitHub Pages 静态版。
+- GitHub Releases 提供 Windows 安装包和便携压缩包。
 
 ## 技术栈
 
@@ -50,6 +51,25 @@ https://cuimuxuan.github.io/image-simple-panel/
 - 缓存生成结果。
 - 记录下载状态。
 - 后端启动时清理未下载生成图。
+
+下载 Windows 本地完整版：
+
+```text
+https://github.com/CuiMuxuan/image-simple-panel/releases/latest
+```
+
+可选产物：
+
+- `image-simple-panel-windows-x64-setup.exe`：安装包，适合长期使用。
+- `image-simple-panel-windows-x64.zip`：便携版，解压后运行 `image-simple-panel.exe`。
+
+Windows release 版会自动打开默认浏览器，数据保存在：
+
+```text
+%LOCALAPPDATA%\ImageSimplePanel
+```
+
+从源码启动：
 
 启动：
 
@@ -276,6 +296,25 @@ npm run build
 构建本地完整模式前端。
 
 ```bash
+npm run release:pack
+```
+
+构建 Windows 便携 release 包。该命令会生成 `release/image-simple-panel-windows-x64.zip`。
+
+如需生成安装包，请安装 Inno Setup，并在 Windows PowerShell 中执行：
+
+```powershell
+$env:APP_VERSION = (node -p "require('./package.json').version")
+& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\setup.iss
+```
+
+安装包产物：
+
+```text
+release/image-simple-panel-windows-x64-setup.exe
+```
+
+```bash
 npm run build:pages
 ```
 
@@ -304,6 +343,29 @@ npm run preview
 
 如果仓库首次启用 Pages，请在 GitHub 仓库设置中将 Pages Source 设置为 GitHub Actions。
 
+## GitHub Releases 发布
+
+项目包含 Windows release workflow：
+
+```text
+.github/workflows/release.yml
+```
+
+推送 `v*` tag 后，Actions 会：
+
+1. 安装依赖。
+2. 执行 `npm run release:pack` 构建本地完整版便携包。
+3. 安装 Inno Setup。
+4. 构建 Windows 安装包。
+5. 将安装包和 zip 上传到 GitHub Releases。
+
+静态站下载中心使用稳定链接：
+
+```text
+https://github.com/CuiMuxuan/image-simple-panel/releases/latest/download/image-simple-panel-windows-x64-setup.exe
+https://github.com/CuiMuxuan/image-simple-panel/releases/latest/download/image-simple-panel-windows-x64.zip
+```
+
 ## 目录结构
 
 ```text
@@ -311,7 +373,15 @@ npm run preview
   .github/
     workflows/
       pages.yml
+      release.yml
+  build/
+    sea-entry.cjs
+  installer/
+    setup.iss
+  scripts/
+    build-windows-release.mjs
   server/
+    desktop-entry.ts
     index.ts
   src/
     App.tsx
@@ -324,6 +394,7 @@ npm run preview
   IMPLEMENTATION_PLAN.md
   README.md
   package.json
+  tsconfig.release-server.json
 ```
 
 ## 安全说明
@@ -338,6 +409,7 @@ npm run preview
 - 不要在多人共享机器上保存敏感 API Key。
 - 如果提供商不允许浏览器跨域请求，请使用本地完整模式或自行部署后端代理。
 - 如果将来要部署给多人使用，应改为服务端环境变量或独立密钥管理方案。
+- Windows release 版的数据目录位于 `%LOCALAPPDATA%\ImageSimplePanel`，卸载程序不会自动删除该目录。
 
 ## 常见问题
 
@@ -379,3 +451,4 @@ npm run preview
 - 生成多张图为串行请求。
 - 固定开发密钥加密只适合本地个人用途。
 - GitHub Pages 静态模式不支持后端文件缓存、后端启动清理和持久历史。
+- Windows release 版启动后使用系统默认浏览器打开本地页面，不内嵌桌面窗口。

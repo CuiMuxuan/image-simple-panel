@@ -50,6 +50,24 @@ const qualityOptions = [
 ];
 
 const runtimeMode = getRuntimeMode();
+const releaseBaseUrl = "https://github.com/CuiMuxuan/image-simple-panel/releases/latest";
+const releaseDownloads = [
+  {
+    label: "下载安装包",
+    detail: "Windows x64 setup.exe",
+    href: `${releaseBaseUrl}/download/image-simple-panel-windows-x64-setup.exe`
+  },
+  {
+    label: "下载便携版",
+    detail: "Windows x64 zip",
+    href: `${releaseBaseUrl}/download/image-simple-panel-windows-x64.zip`
+  },
+  {
+    label: "查看 Release",
+    detail: "版本说明与校验",
+    href: releaseBaseUrl
+  }
+];
 
 type ProviderDialogState = {
   open: boolean;
@@ -544,9 +562,28 @@ export function App() {
         </section>
 
         {isStaticMode && (
-          <div className="static-warning">
-            静态版直接从浏览器请求提供商接口。若提供商未开启 CORS，请使用本地完整模式。
-          </div>
+          <>
+            <section className="download-center" aria-labelledby="download-center-title">
+              <div>
+                <h2 id="download-center-title">下载本地完整版</h2>
+                <p>安装包和便携版来自 GitHub Releases。本地版会在电脑上保存提供商配置、输入图副本和生成历史。</p>
+              </div>
+              <div className="download-actions">
+                {releaseDownloads.map((item) => (
+                  <a key={item.href} className="download-link" href={item.href} target="_blank" rel="noreferrer">
+                    <Download size={16} />
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </section>
+            <div className="static-warning">
+              静态版直接从浏览器请求提供商接口。若提供商未开启 CORS，请使用本地完整模式。
+            </div>
+          </>
         )}
 
         {(error || notice) && (

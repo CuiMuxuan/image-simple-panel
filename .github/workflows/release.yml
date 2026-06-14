@@ -1,0 +1,56 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $packageVersion = node -p "require('./package.json').version"
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+          if ($packageVersion -ne $tagVersion) {
+            throw "package.json version $packageVersion does not match tag ${{ github.ref_name }}"
+          }
+
+      - name: Build portable package
+        run: npm run release:pack
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $env:APP_VERSION = (node -p "require('./package.json').version")
+          Push-Location installer
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" setup.iss
+          Pop-Location
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/image-simple-panel-windows-x64-setup.exe
+            release/image-simple-panel-windows-x64.zip

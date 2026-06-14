@@ -1,23 +1,76 @@
 import axios from "axios";
+import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import express, { type Request, type Response, type NextFunction } from "express";
 import FormData from "form-data";
 import multer from "multer";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..");
-const dataDir = path.join(rootDir, "data");
+const require = createRequire(import.meta.url);
+const sea = require("node:sea") as {
+  isSea(): boolean;
+  getAsset(key: string, encoding?: string): ArrayBuffer | string;
+  getAssetKeys(): string[];
+};
+
+const currentFile = fileURLToPath(import.meta.url);
+const currentDir = path.dirname(currentFile);
+const isDesktopRuntime = process.env.IMAGE_SIMPLE_PANEL_RUNTIME === "desktop" || sea.isSea();
+
+function resolveAppRoot() {
+  return process.env.IMAGE_SIMPLE_PANEL_APP_DIR
+    ? path.resolve(process.env.IMAGE_SIMPLE_PANEL_APP_DIR)
+    : isDesktopRuntime
+      ? path.dirname(process.execPath)
+      : path.resolve(currentDir, "..");
+}
+
+function resolveDataDir(appRootDir: string) {
+  if (process.env.IMAGE_SIMPLE_PANEL_DATA_DIR) {
+    return path.resolve(process.env.IMAGE_SIMPLE_PANEL_DATA_DIR);
+  }
+  if (isDesktopRuntime) {
+    const baseDir = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(baseDir, "ImageSimplePanel");
+  }
+  return path.join(appRootDir, "data");
+}
+
+function resolvePort() {
+  if (process.env.PORT) {
+    const value = Number(process.env.PORT);
+    if (Number.isFinite(value) && value >= 0) {
+      return value;
+    }
+  }
+  return isDesktopRuntime ? 0 : 8787;
+}
+
+function openBrowser(url: string) {
+  if (process.platform === "win32") {
+    execFile("cmd", ["/c", "start", "", url], { windowsHide: true });
+    return;
+  }
+  if (process.platform === "darwin") {
+    execFile("open", [url], { windowsHide: true });
+    return;
+  }
+  execFile("xdg-open", [url], { windowsHide: true });
+}
+
+const rootDir = resolveAppRoot();
+const dataDir = resolveDataDir(rootDir);
 const uploadsDir = path.join(dataDir, "uploads");
 const generatedDir = path.join(dataDir, "generated");
 const providersPath = path.join(dataDir, "providers.json");
 const uploadsPath = path.join(uploadsDir, "uploads.json");
 const historyPath = path.join(dataDir, "history.json");
-const port = Number(process.env.PORT ?? 8787);
+const port = resolvePort();
 const fixedSecret = "image-simple-panel-default-development-secret-v1";
 const uploadLimit = 16;
 const maxInputImageSize = 50 * 1024 * 1024;
@@ -229,8 +282,8 @@ function serializeHistoryItem(item: HistoryRecord) {
   };
 }
 
-function relativeToRoot(absolutePath: string) {
-  return path.relative(rootDir, absolutePath).replaceAll("\\", "/");
+function relativeToDataDir(absolutePath: string) {
+  return path.relative(dataDir, absolutePath).replaceAll("\\", "/");
 }
 
 function extForMime(mimeType: string, originalName: string) {
@@ -464,7 +517,7 @@ async function renumberUploads(state: UploadsState) {
     renumbered.push({
       ...item,
       fileName: nextFileName,
-      path: relativeToRoot(nextAbsolutePath),
+      path: relativeToDataDir(nextAbsolutePath),
       absolutePath: nextAbsolutePath,
       updatedAt: changed ? timestamp : item.updatedAt ?? item.createdAt
     });
@@ -483,7 +536,7 @@ async function persistGeneratedImage(result: ApiImageResult) {
   await fsp.writeFile(absolutePath, result.buffer);
   return {
     localFileName,
-    localPath: relativeToRoot(absolutePath),
+    localPath: relativeToDataDir(absolutePath),
     absolutePath
   };
 }
@@ -656,7 +709,7 @@ app.post("/api/uploads", upload.array("images", uploadLimit), async (req, res) =
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      path: relativeToRoot(absolutePath),
+      path: relativeToDataDir(absolutePath),
       absolutePath,
       createdAt: timestamp,
       updatedAt: timestamp
@@ -778,6 +831,13 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 await ensureStorage();
 await cleanupUndownloadedGeneratedImages();
 
-app.listen(port, "127.0.0.1", () => {
-  console.log(`Image Simple Panel API listening at http://127.0.0.1:${port}`);
+const server = app.listen(port, "127.0.0.1", () => {
+  const address = server.address();
+  const actualPort = typeof address === "object" && address ? address.port : port;
+  const url = `http://127.0.0.1:${actualPort}`;
+  console.log(`Image Simple Panel listening at ${url}`);
+  console.log(`Image Simple Panel data directory: ${dataDir}`);
+  if (isDesktopRuntime || process.env.IMAGE_SIMPLE_PANEL_OPEN_BROWSER === "1") {
+    openBrowser(url);
+  }
 });
