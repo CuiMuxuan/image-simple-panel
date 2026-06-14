@@ -82,6 +82,33 @@ button {
   margin-bottom: 26px;
 }
 
+.static-mode-banner {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid rgba(247, 185, 85, 0.32);
+  border-radius: 8px;
+  background: rgba(247, 185, 85, 0.08);
+  color: #ffe0a1;
+}
+
+.static-mode-banner strong {
+  font-size: 14px;
+}
+
+.static-mode-banner span,
+.static-note,
+.static-warning {
+  color: #d7c191;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.static-note {
+  margin: 10px 0 0;
+}
+
 .panel-section h2 {
   margin: 0 0 12px;
   font-size: 19px;
@@ -429,6 +456,15 @@ textarea:focus {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #131416;
+}
+
+.static-warning {
+  width: min(100%, 1538px);
+  margin: 10px auto 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(247, 185, 85, 0.24);
+  border-radius: 8px;
+  background: rgba(247, 185, 85, 0.06);
 }
 
 .composer textarea {

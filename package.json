@@ -17,6 +17,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "build:pages": "tsc -b && vite build --mode pages",
     "preview": "vite preview --host 127.0.0.1",
     "check": "tsc -b"
   },

@@ -20,6 +20,7 @@ import {
   generateImages,
   getHistory,
   getProviders,
+  getRuntimeMode,
   getUploads,
   markDownloaded,
   removeUpload,
@@ -47,6 +48,8 @@ const qualityOptions = [
   { value: "medium", label: "中" },
   { value: "high", label: "高" }
 ];
+
+const runtimeMode = getRuntimeMode();
 
 type ProviderDialogState = {
   open: boolean;
@@ -317,7 +320,11 @@ export function App() {
       return;
     }
     const link = document.createElement("a");
-    link.href = `/api/generated/${item.id}/download`;
+    link.href = runtimeMode === "static" ? item.imageUrl ?? item.sourceUrl ?? "" : `/api/generated/${item.id}/download`;
+    if (!link.href) {
+      setError("找不到可下载的图片。");
+      return;
+    }
     link.download = item.localFileName ?? "generated.png";
     document.body.appendChild(link);
     link.click();
@@ -336,10 +343,17 @@ export function App() {
   }
 
   const canGenerate = Boolean(selectedProviderId && prompt.trim() && !isGenerating && (mode === "text" || uploads.length > 0));
+  const isStaticMode = runtimeMode === "static";
 
   return (
     <div className="app-shell">
       <aside className="sidebar left-sidebar">
+        {isStaticMode && (
+          <section className="static-mode-banner">
+            <strong>静态版</strong>
+            <span>API Key 仅保存在当前页面内存中，刷新或关闭页面后清空。</span>
+          </section>
+        )}
         <section className="panel-section">
           <div className="section-heading">
             <h2>提供商</h2>
@@ -373,6 +387,9 @@ export function App() {
               <Trash2 size={16} />
             </button>
           </div>
+          {isStaticMode && selectedProvider && (
+            <p className="static-note">当前提供商配置不会写入浏览器存储或服务器。</p>
+          )}
         </section>
 
         <section className="panel-section">
@@ -526,6 +543,12 @@ export function App() {
           </div>
         </section>
 
+        {isStaticMode && (
+          <div className="static-warning">
+            静态版直接从浏览器请求提供商接口。若提供商未开启 CORS，请使用本地完整模式。
+          </div>
+        )}
+
         {(error || notice) && (
           <div className={error ? "message error-message" : "message notice-message"}>
             <span>{error || notice}</span>
@@ -573,7 +596,7 @@ export function App() {
             <Download size={14} />
             下载图片
           </button>
-          <button type="button" onClick={() => void copyText(selectedImage.absolutePath ?? selectedImage.localPath ?? "", "本地路径已复制。")} disabled={!selectedImage.localPath}>
+          <button type="button" onClick={() => void copyText(selectedImage.absolutePath ?? selectedImage.localPath ?? "", "本地路径已复制。")} disabled={isStaticMode || !selectedImage.localPath}>
             复制本地图片路径
           </button>
         </div>

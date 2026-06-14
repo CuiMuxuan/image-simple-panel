@@ -17,7 +17,9 @@ export type UploadImage = {
   path: string;
   absolutePath: string;
   createdAt: string;
+  updatedAt?: string;
   url: string;
+  file?: File;
 };
 
 export type Mode = "text" | "image";
@@ -43,6 +45,7 @@ export type HistoryItem = {
   createdAt: string;
   error: string | null;
   imageUrl: string | null;
+  retryPayload?: GeneratePayload;
 };
 
 export type GeneratePayload = {
